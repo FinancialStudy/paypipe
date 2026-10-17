@@ -1,0 +1,65 @@
+name: paypipe
+
+x-backend: &backend
+  build: &backend-build
+    context: ../BE
+    dockerfile: ../INFRA/docker/backend.Dockerfile
+  depends_on:
+    mysql:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Seoul
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  card-server:
+    <<: *backend
+    build:
+      <<: *backend-build
+      args:
+        MODULE: card-server
+    environment:
+      DB_HOST: mysql
+    ports:
+      - "8082:8082"
+
+  pg-server:
+    <<: *backend
+    build:
+      <<: *backend-build
+      args:
+        MODULE: pg-server
+    environment:
+      DB_HOST: mysql
+      CARD_SERVER_URL: http://card-server:8082
+    ports:
+      - "8081:8081"
+
+  merchant-server:
+    <<: *backend
+    build:
+      <<: *backend-build
+      args:
+        MODULE: merchant-server
+    environment:
+      DB_HOST: mysql
+      PG_SERVER_URL: http://pg-server:8081
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql-data:

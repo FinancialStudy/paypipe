@@ -1,0 +1,18 @@
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# BE
+BE/.gradle/
+BE/**/build/
+!BE/gradle/wrapper/gradle-wrapper.jar
+
+# FE
+node_modules/
+FE/*/dist/
+
+# 환경변수·키
+.env
+*.pem
